@@ -30,6 +30,15 @@ textarea{resize:vertical}
 .st input{width:70px;margin:0;text-align:center;font-weight:700;padding:8px}
 footer{position:fixed;left:0;right:0;bottom:0;background:#0f172a;color:#fff;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));z-index:20}
 .fi{max-width:980px;margin:0 auto}
+/* coupon */
+.coup{background:var(--cd);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin-top:12px}
+.coup .row{display:flex;gap:8px;align-items:center}
+.coup input{flex:1;text-transform:uppercase;letter-spacing:.08em;font-weight:700;padding:10px 12px}
+.coup .msg{font-size:13px;margin-top:8px;min-height:18px}
+.coup .ok{color:var(--ok);font-weight:700}
+.coup .er{color:var(--er)}
+.disc{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:8px 14px;margin-top:8px;font-size:14px;display:flex;justify-content:space-between;align-items:center}
+.disc b{color:var(--ok);font-size:16px}
 /* pay */
 .pay{background:var(--cd);border:1px solid var(--ok);border-radius:14px;padding:18px;margin-top:14px;text-align:center}
 .pay h3{margin:0 0 6px;font-size:18px}.pay .amt{font-size:28px;font-weight:800;color:var(--ok);margin:4px 0 12px}
@@ -89,7 +98,7 @@ td.w2{white-space:normal;min-width:180px;max-width:260px}
   <div id="err" style="color:var(--er);font-size:13px;min-height:18px;margin-top:8px"></div>
   <button class="btn" id="go" style="width:100%;margin-top:12px">Continue</button>
   <button class="btn o" data-back style="width:100%;margin-top:8px">← Back</button>
-  <div class="mu" style="margin-top:16px">📞 Customer care: <a class="care" href="tel:8754312208" style="color:inherit;font-weight:700">8754312208</a></div>
+  <div class="mu" style="margin-top:16px">📞 Customer care: <a class="care" href="tel:9597086882" style="color:inherit;font-weight:700">9597086882</a></div>
 </div>
 
 <!-- CUSTOMER APP -->
@@ -102,10 +111,18 @@ td.w2{white-space:normal;min-width:180px;max-width:260px}
   <div id="msg"></div>
   <div id="grid"></div>
   <div id="mo" class="cd" hidden style="margin-top:14px"></div>
+  <div id="coupDiv" class="coup" hidden>
+    <div class="mu" style="margin-bottom:8px;font-weight:600">🎟️ Have a coupon code?</div>
+    <div class="row">
+      <input id="coupIn" placeholder="Enter code e.g. PARTY50" autocomplete="off">
+      <button class="btn" id="coupBtn">Apply</button>
+    </div>
+    <div id="coupMsg" class="msg"></div>
+  </div>
   <div id="ad2" class="cd" style="margin-top:14px"></div>
   <div id="paySection"></div>
   <div id="notesDiv" class="notes" hidden></div>
-  <div class="mu" style="text-align:center;margin:18px 0 8px;font-size:15px">📞 Customer care: <a class="care" href="tel:8754312208" style="color:inherit;font-weight:700">8754312208</a></div>
+  <div class="mu" style="text-align:center;margin:18px 0 8px;font-size:15px">📞 Customer care: <a class="care" href="tel:9597086882" style="color:inherit;font-weight:700">9597086882</a></div>
 </div>
 
 <!-- ADMIN LOGIN -->
@@ -131,10 +148,12 @@ td.w2{white-space:normal;min-width:180px;max-width:260px}
     <button class="on" data-tab="set">⚙ Settings</button>
     <button data-tab="sum">📊 Summary</button>
     <button data-tab="ord">📋 Orders</button>
+    <button data-tab="coup">🎟️ Coupons</button>
   </div>
   <div id="set" class="apane on"></div>
   <div id="sum" class="apane"></div>
   <div id="ord" class="apane"></div>
+  <div id="coup" class="apane"></div>
 </div>
 </div>
 
@@ -155,7 +174,7 @@ const inr=n=>'₹'+(Math.round(n*100)/100).toLocaleString('en-IN');
 const rng=(a,b)=>a===b?inr(a):inr(a)+' - '+inr(b);
 const LS={g(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},s(k,v){try{localStorage.setItem(k,v)}catch(e){}},d(k){try{localStorage.removeItem(k)}catch(e){}}};
 
-const API_URL="https://script.google.com/macros/s/AKfycbyFAdSuq4p51DbFHEwmPc7_36sbIClELfaa3MU3eVuFYqSkPPMG1asaid0fvCreXupMOA/exec";
+const API_URL="https://script.google.com/macros/s/AKfycbyvUmWXtwJkZWxNZLofFED84tmJnpM6N9S79yLcgKrukRL_QwGpId7aXJoVN_jP6n0ygA/exec";
 const run=(f,...a)=>{
   if(typeof google!=='undefined'&&google.script&&google.script.run)
     return new Promise((ok,no)=>google.script.run.withSuccessHandler(ok).withFailureHandler(e=>no(e))[f](...a));
@@ -166,7 +185,7 @@ const run=(f,...a)=>{
     .then(r=>r.text()).then(t=>{let j;try{j=JSON.parse(t)}catch(e){throw new Error('The server did not return valid data. Redeploy Code.gs as a New version.')}if(!j.ok)throw new Error(j.error);return j.data});
 };
 
-let SH,ME,Q={},OFF=0,isNew=false,TOK='',QU={},QT=null,UPIID='',BRAND='Zero Food waste';
+let SH,ME,Q={},OFF=0,isNew=false,TOK='',QU={},QT=null,UPIID='',BRAND='Zero Food waste',COUP=null;
 const closed=()=>!!(SH&&SH.deadline&&Date.now()+OFF>=new Date(SH.deadline).getTime());
 const t12=h=>{if(!h)return '';const a=h.split(':'),H=+a[0];return ((H%12)||12)+':'+a[1]+' '+(H<12?'AM':'PM')};
 const dtm=()=>{if(!SH||!SH.deliveryTime)return '';return t12(SH.deliveryTime)+(SH.deliveryTo?' - '+t12(SH.deliveryTo):'')}
@@ -180,7 +199,7 @@ function brand(logo,nm){
   });
   document.title=BRAND;
 }
-function setCare(n){n=String(n||'8754312208').trim();document.querySelectorAll('a.care').forEach(a=>{a.textContent=n;a.href='tel:'+n.replace(/[^\d+]/g,'')})}
+function setCare(n){n=String(n||'9597086882').trim();document.querySelectorAll('a.care').forEach(a=>{a.textContent=n;a.href='tel:'+n.replace(/[^\d+]/g,'')})}
 function setTagline(t){document.querySelectorAll('.tgl').forEach(el=>{el.textContent=t||'';el.hidden=!t})}
 function setNotes(n){const el=$('#notesDiv');if(!el)return;el.innerHTML=n?('<h4>📋 Notes &amp; Instructions</h4>'+esc(n)):'';el.hidden=!n}
 
@@ -240,11 +259,42 @@ function draw(){
     (ME.items[p.id]?'<div class="mu" style="margin-top:4px">Placed: '+ME.items[p.id]+' · cannot be reduced</div>':'')+
     '<div class="fq" data-fq="'+p.id+'" style="margin-top:8px;font-size:14px"></div></div>'
   ).join(''):'<div class="mu">Products will appear here soon.</div>';
-  drawOrder();drawPay();
+  drawOrder();showCoupDiv();drawPay();
   $('#ad2').innerHTML='<div class="r2" style="border:0"><b>📍 Delivery address</b><button class="btn o" id="ea" style="padding:6px 12px">Edit</button></div>'+
     '<div id="av">'+esc(ME.name)+' · '+esc(ME.phone)+'<br>'+esc(ME.addr).replace(/\n/g,'<br>')+'</div>';
   cart();paintQ();refreshQuote();
 }
+
+/* ---- coupon ---- */
+function showCoupDiv(){
+  const el=document.getElementById('coupDiv');
+  if(!el)return;
+  el.hidden=!ME||!ME.lines||!ME.lines.length||closed();
+}
+function couponDiscount(total){
+  if(!COUP)return 0;
+  if(COUP.type==='percent')return Math.round(total*COUP.discount)/100;
+  return Math.min(COUP.discount,total);
+}
+document.getElementById('coupBtn').onclick=async()=>{
+  const code=document.getElementById('coupIn').value.trim().toUpperCase();
+  const msg=document.getElementById('coupMsg');
+  const btn=document.getElementById('coupBtn');
+  if(!code){msg.className='msg er';msg.textContent='Please enter a coupon code.';return}
+  btn.disabled=true;btn.textContent='Checking…';
+  try{
+    const r=await run('applyCoupon',code);
+    COUP=r;
+    msg.className='msg ok';
+    msg.textContent='✅ Coupon applied! '+(r.type==='percent'?r.discount+'% off':'₹'+r.discount+' off');
+    drawOrder();
+  }catch(e){
+    COUP=null;
+    msg.className='msg er';
+    msg.textContent='❌ '+(e.message||e);
+    drawOrder();
+  }finally{btn.disabled=false;btn.textContent='Apply'}
+};
 
 function drawOrder(){
   if(!ME||!ME.lines||!ME.lines.length){$('#mo').hidden=true;return}
@@ -255,7 +305,9 @@ function drawOrder(){
     h+='<div class="r2"><span>Products value</span><span>'+inr(ME.final)+'</span></div>';
     h+='<div class="r2"><span>Delivery charges</span><span>'+inr(dc)+'</span></div>';
   }
-  h+='<div class="r2"><b>Total Value</b><b>'+inr(ME.total||ME.final)+'</b></div>';
+  var disc=couponDiscount(ME.total||ME.final);
+  if(COUP&&disc>0){h+='<div class="r2"><span>Subtotal</span><span>'+inr(ME.total||ME.final)+'</span></div>';h+='<div class="r2"><span style="color:var(--ok)">🎟️ Coupon ('+esc(COUP.code)+')</span><span style="color:var(--ok)">−'+inr(disc)+'</span></div>';}
+  h+='<div class="r2"><b>Total Value</b><b>'+inr((ME.total||ME.final)-disc)+'</b></div>';
   if(!ME.closed)h+='<div class="mu" style="margin-top:4px">Total Value is confirmed when ordering closes.</div>';
   h+='<div style="margin-top:6px">🚚 Delivery: <b>'+esc(dall())+'</b></div>';
   $('#mo').innerHTML=h;$('#mo').hidden=false;
@@ -324,7 +376,7 @@ function drawPay(){
   const el=$('#paySection');if(!el)return;
   const cl=ME&&(ME.closed||closed());
   if(!cl||!ME||!ME.lines||!ME.lines.length){el.innerHTML='';return}
-  const amt=ME.total||ME.final||0,uid=UPIID||'';
+  const _base=ME.total||ME.final||0,_disc=couponDiscount(_base),amt=_base-_disc,uid=UPIID||'';
   const paid=ME.payStatus==='verified',pending=ME.payStatus==='pending',rejected=ME.payStatus==='rejected';
   if(paid){el.innerHTML='<div class="pay"><div class="pst verified">✅ Payment Verified</div><div class="mu" style="margin-top:6px">UTR: <b>'+esc(ME.utr)+'</b></div></div>';return}
   var h='<div class="pay"><h3>💳 Pay & Confirm Order</h3><div class="amt">'+inr(amt)+'</div>';
@@ -372,7 +424,7 @@ $('#rf').onclick=()=>{if(touched&&!confirm('Unsaved changes will be lost. Refres
 
 async function load(){
   try{D=await run('adminData',TK)}catch(e){$('#lg').hidden=false;$('#aapp').hidden=true;$('#le').textContent=e.message||e;return}
-  DR={deadline:D.deadline,deliveryDate:D.deliveryDate,deliveryTime:D.deliveryTime||'',deliveryTo:D.deliveryTo||'',
+  DR={coupons:JSON.parse(JSON.stringify(D.coupons||[])),deadline:D.deadline,deliveryDate:D.deliveryDate,deliveryTime:D.deliveryTime||'',deliveryTo:D.deliveryTo||'',
       logo:D.logo||'',care:D.care||'',brandName:D.brandName||'',tagline:D.tagline||'',notes:D.notes||'',
       upiId:D.upiId||'',deliveryCharge:+(D.deliveryCharge||0),products:JSON.parse(JSON.stringify(D.products))};
   touched=false;
@@ -396,7 +448,7 @@ function drawSet(){
   h+='<div class="row"><div><div class="mu">Delivery Charges (₹) — added to Total Value</div><input data-f="dc" type="number" min="0" placeholder="0" value="'+esc(DR.deliveryCharge||0)+'"></div></div>';
   h+='<div class="row"><div><div class="mu">Brand / App name</div><input data-f="bn" placeholder="Zero Food waste" value="'+esc(DR.brandName||'')+'"></div></div>';
   h+='<div class="row"><div><div class="mu">Tagline (shown to customers in small font)</div><input data-f="tgf" placeholder="Fresh. Local. Zero Waste." value="'+esc(DR.tagline||'')+'"></div></div>';
-  h+='<div class="row"><div><div class="mu">Customer care number</div><input data-f="care" type="tel" placeholder="8754312208" value="'+esc(DR.care||'')+'"></div><div><div class="mu">UPI ID (customers pay to this)</div><input data-f="upi" placeholder="yourname@upi" value="'+esc(DR.upiId||'')+'"></div></div>';
+  h+='<div class="row"><div><div class="mu">Customer care number</div><input data-f="care" type="tel" placeholder="9597086882" value="'+esc(DR.care||'')+'"></div><div><div class="mu">UPI ID (customers pay to this)</div><input data-f="upi" placeholder="yourname@upi" value="'+esc(DR.upiId||'')+'"></div></div>';
   h+='<div class="row"><div><div class="mu">Notes &amp; Instructions (shown at bottom of customer screen)</div><textarea data-f="notes" style="min-height:90px">'+esc(DR.notes||'')+'</textarea></div></div>';
   h+='<div class="row"><div><div class="mu">Change admin password (leave blank to keep)</div><input type="password" data-f="apw" placeholder="New password"></div><div><div class="mu">Confirm password</div><input type="password" data-f="apw2" placeholder="Re-enter"></div></div>';
   h+='<div class="row"><div><div class="mu">Logo</div><div class="row" style="margin:0">'+(DR.logo?'<img src="'+esc(DR.logo)+'" alt="" style="height:48px;max-width:160px;object-fit:contain;flex:0 0 auto">':'<span class="mu">No logo yet</span>')+'<input type="file" accept="image/*" data-lg="1">'+(DR.logo?'<button class="btn o" style="padding:6px 10px;font-size:13px" data-x="rl">Remove</button>':'')+'</div></div></div>';
@@ -472,8 +524,71 @@ $('#set').addEventListener('click',async e=>{
   drawSet();
 });
 
+function uid6(){return Math.random().toString(36).slice(2,8).toUpperCase()}
+function drawCoupons(){
+  var c=DR.coupons||[];
+  var h='<h3 style="margin:0 0 8px">🎟️ Coupon Codes</h3>';
+  h+='<div class="mu" style="margin-bottom:10px">Create unique coupon codes. Customers enter these at checkout for a discount.</div>';
+  h+='<table><tr><th>Code</th><th>Discount</th><th>Type</th><th>Active</th><th></th></tr>'+
+     c.map((cp,i)=>'<tr>'+
+       '<td><input style="width:140px;padding:5px 8px;font-weight:700;letter-spacing:.06em" data-ci="'+i+'" data-cf="code" value="'+esc(cp.code)+'"></td>'+
+       '<td><input type="number" style="width:90px;padding:5px 8px" data-ci="'+i+'" data-cf="discount" value="'+esc(cp.discount)+'"></td>'+
+       '<td><select data-ci="'+i+'" data-cf="type" style="padding:5px 8px;border:1px solid var(--bd);border-radius:6px"><option value="flat"'+(cp.type==='flat'?' selected':'')+'>₹ Flat</option><option value="percent"'+(cp.type==='percent'?' selected':'')+'>% Percent</option></select></td>'+
+       '<td><input type="checkbox" data-ci="'+i+'" data-cf="active"'+(cp.active?' checked':'')+' style="width:18px;height:18px"></td>'+
+       '<td><button class="btn o" style="padding:4px 8px;font-size:12px;color:var(--er)" data-cx="'+i+'">✕</button></td>'+
+     '</tr>').join('')+'</table>';
+  h+='<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">'+
+     '<button class="btn o" id="addCoup">+ Add row</button>'+
+     '<button class="btn o" id="genCoup">✨ Auto-generate code</button>'+
+     '</div>'+
+     '<div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">'+
+     '<input id="manCoupIn" placeholder="Type code e.g. PARTY50" style="flex:1;min-width:160px;max-width:240px;padding:8px 10px;text-transform:uppercase;letter-spacing:.06em;font-weight:700">'+
+     '<button class="btn o" id="manCoup">➕ Add this code</button>'+
+     '<button class="btn" id="saveCoup" style="margin-left:auto">💾 Save all coupons</button>'+
+     '</div>'+
+     '<div class="mu" id="coupAm" style="margin-top:6px"></div>';
+  $('#coup').innerHTML=h;
+
+  // events
+  $('#coup').querySelectorAll('input[data-ci],select[data-ci]').forEach(el=>{
+    el.addEventListener(el.type==='checkbox'?'change':'input',()=>{
+      var i=el.dataset.ci,f=el.dataset.cf;
+      if(f==='active')DR.coupons[i].active=el.checked;
+      else if(f==='discount')DR.coupons[i].discount=parseFloat(el.value)||0;
+      else DR.coupons[i][f]=el.value.toUpperCase();
+    });
+  });
+  $('#coup').querySelectorAll('button[data-cx]').forEach(btn=>{
+    btn.onclick=()=>{DR.coupons.splice(+btn.dataset.cx,1);drawCoupons()};
+  });
+  document.getElementById('addCoup').onclick=()=>{
+    DR.coupons.push({code:'',discount:0,type:'flat',active:true});drawCoupons();
+    setTimeout(()=>{const ins=$('#coup').querySelectorAll('input[data-cf="code"]');if(ins.length)ins[ins.length-1].focus()},100);
+  };
+  document.getElementById('genCoup').onclick=()=>{
+    const code='AMMAS'+uid6();
+    DR.coupons.push({code,discount:50,type:'flat',active:true});drawCoupons();
+    setTimeout(()=>{const ins=$('#coup').querySelectorAll('input[data-cf="code"]');if(ins.length){const last=ins[ins.length-1];last.focus();last.select()}},100);
+  };
+  document.getElementById('manCoup').onclick=()=>{
+    const inp=document.getElementById('manCoupIn');
+    const val=inp.value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+    if(!val||val.length<2){inp.style.borderColor='var(--er)';inp.focus();return}
+    if(DR.coupons.find(c=>c.code===val)){inp.style.borderColor='var(--er)';document.getElementById('coupAm').textContent='Code '+val+' already exists.';return}
+    inp.style.borderColor='';inp.value='';
+    DR.coupons.push({code:val,discount:50,type:'flat',active:true});drawCoupons();
+    setTimeout(()=>{const ins=$('#coup').querySelectorAll('input[data-cf="code"]');if(ins.length){const last=ins[ins.length-1];last.focus();}},100);
+  };
+  document.getElementById('saveCoup').onclick=async()=>{
+    const am=document.getElementById('coupAm');am.textContent='Saving…';
+    try{await run('adminSaveCoupons',TK,DR.coupons);am.textContent='✅ Coupons saved!';}
+    catch(e){am.textContent='❌ '+(e.message||e);}
+  };
+}
+
 function drawRest(){
   const T=D.totals,P=D.products;let sq=0,sa=0;
+  drawCoupons();
   $('#sum').innerHTML='<h3 style="margin:0 0 8px">Summary</h3>'+(P.length?
     '<table><tr><th>Product</th><th>Base price</th><th>Total qty</th><th>Customers</th><th>Final price/pc</th><th>Amount</th><th>Next tier</th></tr>'+
     P.map(p=>{const q=T[p.id]||0,pr=priceAt(p,q),nx=tiers(p).find(t=>+t.min>q);sq+=q;sa+=q*pr;
